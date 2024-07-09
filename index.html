@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>bKash Payment Demo</title>
+</head>
+<body>
+    <h1>bKash Payment Demo</h1>
+    <form id="paymentForm">
+        <label for="amount">Enter Amount:</label>
+        <input type="number" id="amount" name="amount" required>
+        <button type="submit">Send Payment</button>
+    </form>
+
+    <div id="paymentResponse" style="margin-top: 20px; display: none;">
+        <h2>Payment Response</h2>
+        <p id="responseMessage"></p>
+        <pre id="responseDetails"></pre>
+    </div>
+
+    <script>
+        document.getElementById('paymentForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const amount = document.getElementById('amount').value;
+            
+            try {
+                const response = await fetch('http://localhost:8000/create_pay', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ amount: amount })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to create payment: ' + response.statusText);
+                }
+
+                const responseData = await response.json();
+                if (responseData.success !== false) {
+                    // Redirect to the bkashURL
+                    window.location.href = responseData.bkashURL;
+                } else {
+                    displayPaymentResponse(responseData);
+                }
+            } catch (error) {
+                console.error('Error sending payment request:', error);
+                displayPaymentResponse({ success: false, message: 'Failed to send payment request', error: error.message });
+            }
+        });
+
+        function displayPaymentResponse(responseData) {
+            const responseMessageElem = document.getElementById('responseMessage');
+            const responseDetailsElem = document.getElementById('responseDetails');
+            const paymentResponseElem = document.getElementById('paymentResponse');
+
+            if (responseData.success) {
+                responseMessageElem.textContent = 'Payment Successful!';
+                responseDetailsElem.textContent = JSON.stringify(responseData, null, 2);
+            } else {
+                responseMessageElem.textContent = 'Payment Failed';
+                responseDetailsElem.textContent = responseData.message || 'Unknown error occurred';
+            }
+
+            paymentResponseElem.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
